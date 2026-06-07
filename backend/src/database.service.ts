@@ -39,6 +39,7 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
 
     await this.pool.query('SELECT 1');
     await this.ensureSchema();
+    await this.ensureUserPasswordColumn();
     this.logger.log('MySQL database connected');
   }
 
@@ -54,6 +55,17 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
     if (!this.pool) throw new Error('MySQL pool is not initialized');
     const [rows] = await this.pool.query<T>(sql, params);
     return rows;
+  }
+
+  private async ensureUserPasswordColumn() {
+    const databaseName = process.env.MYSQL_DATABASE || process.env.DB_NAME || 'haill';
+    const rows = await this.query<RowDataPacket[]>(
+      'SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ? AND COLUMN_NAME = ?',
+      [databaseName, 'users', 'password_hash'],
+    );
+    if (!rows.length) {
+      await this.query('ALTER TABLE users ADD COLUMN password_hash VARCHAR(128) NULL AFTER phone');
+    }
   }
 
   private async ensureSchema() {

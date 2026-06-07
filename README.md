@@ -49,7 +49,7 @@ npm run dev:admin
 后端现在支持两种模式：
 
 1. **内存模式**：不配置数据库时自动启用，适合本地快速测试。
-2. **MySQL 模式**：配置 MySQL 后自动启用，数据写入数据库，启动时会执行 `database/schema.sql` 建表。
+2. **MySQL 模式**：配置 MySQL 后自动启用，数据写入数据库，启动时会执行 `database/schema.sql` 建表，并自动补齐 `users.password_hash` 字段。
 
 健康检查接口会返回当前模式：
 
@@ -102,14 +102,16 @@ npm run dev:backend
 ## 当前已实现接口重点
 
 - `/api/health`：健康检查，包含数据库模式
+- `/api/auth/register`：注册，返回用户信息和 Bearer token
+- `/api/auth/login`：登录，返回用户信息和 Bearer token
 - `/api/users`：用户创建/列表
 - `/api/tutorials`：教程创建、审核后列表、详情
 - `/api/questions`：问题发布、老师回答
 - `/api/teacher-applications`：老师入驻申请
 - `/api/supplies`：农户货源发布、审核后列表
 - `/api/purchase-demands`：收购需求发布、审核后列表
-- `/api/admin/dashboard`：后台待审核统计和防诈骗提醒
-- `/api/admin/review/:targetType/:id`：后台审核
+- `/api/admin/dashboard`：后台待审核统计和防诈骗提醒，需要管理员 Bearer token
+- `/api/admin/review/:targetType/:id`：后台审核，需要管理员 Bearer token
 
 ## 风控提醒
 
@@ -117,8 +119,8 @@ npm run dev:backend
 
 ## 下一步
 
-- 登录注册、密码加密、JWT 鉴权
-- 角色权限：农户、老师、收购商、管理员
+- 用户端/后台接入登录状态和 Bearer token
+- 完善角色权限：农户、老师、收购商、管理员
 - 图片/视频真实上传
 - 用户端和后台接真实接口
 - Docker 一键部署 backend + web + admin + MySQL

@@ -49,14 +49,45 @@ describe('haill MVP API', () => {
     expect(answer.body.questionId).toBe(question.body.id);
   });
 
-  it('approves a pending purchase demand through admin review', async () => {
+  it('registers and logs in with a role token', async () => {
+    const registered = await request(app.getHttpServer())
+      .post('/api/auth/register')
+      .send({ phone: '13900000001', password: 'abc123456', nickname: '李农户', role: 'farmer', region: '山东寿光' })
+      .expect(201);
+
+    expect(registered.body.user.role).toBe('farmer');
+    expect(registered.body.user.password).toBeUndefined();
+    expect(registered.body.user.passwordHash).toBeUndefined();
+    expect(registered.body.accessToken).toEqual(expect.any(String));
+
+    const loggedIn = await request(app.getHttpServer())
+      .post('/api/auth/login')
+      .send({ phone: '13900000001', password: 'abc123456' })
+      .expect(201);
+
+    expect(loggedIn.body.user.nickname).toBe('李农户');
+    expect(loggedIn.body.accessToken).toEqual(expect.any(String));
+  });
+
+  it('rejects admin review without admin token and allows it with admin token', async () => {
     const demand = await request(app.getHttpServer())
       .post('/api/purchase-demands')
       .send({ buyerId: 4, productName: '土鸡', category: '养殖', quantity: 500, unit: '只', region: '50公里内', selfDeliveryPrice: 18, pickupPrice: 16 })
       .expect(201);
 
+    await request(app.getHttpServer())
+      .post(`/api/admin/review/purchaseDemand/${demand.body.id}`)
+      .send({ action: 'approved' })
+      .expect(401);
+
+    const login = await request(app.getHttpServer())
+      .post('/api/auth/login')
+      .send({ phone: '13800000000', password: 'admin123456' })
+      .expect(201);
+
     const reviewed = await request(app.getHttpServer())
       .post(`/api/admin/review/purchaseDemand/${demand.body.id}`)
+      .set('Authorization', `Bearer ${login.body.accessToken}`)
       .send({ action: 'approved' })
       .expect(201);
 

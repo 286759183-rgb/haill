@@ -1,4 +1,4 @@
-import { IsIn, IsInt, IsNotEmpty, IsNumber, IsOptional, IsPhoneNumber, IsString, Min } from 'class-validator';
+import { IsIn, IsInt, IsNotEmpty, IsNumber, IsOptional, IsString, Min, MinLength } from 'class-validator';
 import type { UserRole } from './domain';
 
 export class CreateUserDto {
@@ -72,6 +72,19 @@ export class CreatePurchaseDemandDto {
   @IsOptional() @IsNumber() @Min(0) pickupPrice?: number;
   @IsOptional() @IsString() priceUnit?: string;
   @IsOptional() @IsString() contactPhone?: string;
+}
+
+export class RegisterDto {
+  @IsString() @IsNotEmpty() phone!: string;
+  @IsString() @MinLength(6) password!: string;
+  @IsString() @IsNotEmpty() nickname!: string;
+  @IsIn(['farmer', 'teacher', 'buyer', 'admin']) role!: UserRole;
+  @IsOptional() @IsString() region?: string;
+}
+
+export class LoginDto {
+  @IsString() @IsNotEmpty() phone!: string;
+  @IsString() @IsNotEmpty() password!: string;
 }
 
 export class ReviewDto {

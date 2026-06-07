@@ -9,6 +9,9 @@ import { TeacherApplicationsController } from './teacher-applications.controller
 import { SuppliesController } from './supplies.controller';
 import { PurchaseDemandsController } from './purchase-demands.controller';
 import { AdminController } from './admin.controller';
+import { AuthController } from './auth.controller';
+import { AuthService } from './auth.service';
+import { AuthGuard } from './auth.guard';
 
 @Module({
   imports: [],
@@ -21,7 +24,8 @@ import { AdminController } from './admin.controller';
     SuppliesController,
     PurchaseDemandsController,
     AdminController,
+    AuthController,
   ],
-  providers: [DatabaseService, StoreService],
+  providers: [DatabaseService, StoreService, AuthService, AuthGuard],
 })
 export class AppModule {}

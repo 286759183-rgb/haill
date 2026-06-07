@@ -1,8 +1,12 @@
-import { Body, Controller, Inject, Get, Param, ParseIntPipe, Post } from '@nestjs/common';
+import { Body, Controller, Inject, Get, Param, ParseIntPipe, Post, UseGuards } from '@nestjs/common';
 import { ReviewDto } from './dto';
 import { StoreService } from './store.service';
+import { AuthGuard } from './auth.guard';
+import { Roles } from './roles.decorator';
 
 @Controller('admin')
+@UseGuards(AuthGuard)
+@Roles('admin')
 export class AdminController {
   constructor(@Inject(StoreService) private readonly store: StoreService) {}
 

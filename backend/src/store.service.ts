@@ -1,4 +1,5 @@
 import { BadRequestException, Inject, Injectable, NotFoundException, OnModuleInit } from '@nestjs/common';
+import { createHmac } from 'node:crypto';
 import type { ResultSetHeader, RowDataPacket } from 'mysql2/promise';
 import type { Answer, PurchaseDemand, Question, ReviewStatus, Supply, TeacherApplication, Tutorial, User } from './domain';
 import { DatabaseService } from './database.service';
@@ -15,6 +16,7 @@ export class StoreService implements OnModuleInit {
   teacherApplications: TeacherApplication[] = [];
   supplies: Supply[] = [];
   purchaseDemands: PurchaseDemand[] = [];
+  private memoryPasswordHashes = new Map<number, string>();
 
   constructor(@Inject(DatabaseService) private readonly database: DatabaseService) {
     if (this.database.mode === 'memory') this.seedMemory();
@@ -55,12 +57,13 @@ export class StoreService implements OnModuleInit {
 
   private id() { return this.nextId++; }
   private now() { return new Date().toISOString(); }
+  private hashPassword(password: string) { return createHmac('sha256', process.env.JWT_SECRET || 'haill-dev-secret-change-me').update(password).digest('hex'); }
 
   private seedMemory() {
-    const admin = this.createUserMemory({ phone: '13800000000', nickname: '平台管理员', role: 'admin', region: '本地' });
-    const farmer = this.createUserMemory({ phone: '13800000001', nickname: '示例农户', role: 'farmer', region: '河南周口' });
-    const teacher = this.createUserMemory({ phone: '13800000002', nickname: '王老师', role: 'teacher', region: '河南' });
-    const buyer = this.createUserMemory({ phone: '13800000003', nickname: '本地收购商', role: 'buyer', region: '河南' });
+    const admin = this.createUserMemory({ phone: '13800000000', nickname: '平台管理员', role: 'admin', region: '本地' }, this.hashPassword('admin123456'));
+    const farmer = this.createUserMemory({ phone: '13800000001', nickname: '示例农户', role: 'farmer', region: '河南周口' }, this.hashPassword('farmer123456'));
+    const teacher = this.createUserMemory({ phone: '13800000002', nickname: '王老师', role: 'teacher', region: '河南' }, this.hashPassword('teacher123456'));
+    const buyer = this.createUserMemory({ phone: '13800000003', nickname: '本地收购商', role: 'buyer', region: '河南' }, this.hashPassword('buyer123456'));
     this.tutorials.push({ id: this.id(), title: '番茄常见黄叶处理办法', category: '种植', cropOrBreed: '番茄', content: '先观察叶片位置，再排查缺肥、积水和病害。严重时建议请本地老师现场确认。', mediaUrl: '', authorId: teacher.id, status: 'approved', createdAt: this.now() });
     this.supplies.push({ id: this.id(), farmerId: farmer.id, productName: '散养土鸡', category: '养殖', quantity: 300, unit: '只', region: '河南周口', availableAt: '2026-07-01', description: '约3斤以上，可视频验货。', imageUrl: '', videoUrl: '', selfDeliveryPrice: 18, pickupPrice: 16, priceUnit: '元/斤', contactPhone: farmer.phone, status: 'approved', createdAt: this.now() });
     this.purchaseDemands.push({ id: this.id(), buyerId: buyer.id, productName: '西瓜', category: '水果', quantity: 20000, unit: '斤', region: '周边50公里', purchaseAt: '2026-06-30', qualityRequirement: '8斤以上，成熟度好', selfDeliveryPrice: 1.2, pickupPrice: 1.0, priceUnit: '元/斤', contactPhone: buyer.phone, status: 'approved', createdAt: this.now() });
@@ -70,10 +73,10 @@ export class StoreService implements OnModuleInit {
   private async seedMysql() {
     const rows = await this.database.query<CountRow[]>('SELECT COUNT(*) AS total FROM users');
     if (Number(rows[0]?.total ?? 0) > 0) return;
-    const admin = await this.createUser({ phone: '13800000000', nickname: '平台管理员', role: 'admin', region: '本地' });
-    const farmer = await this.createUser({ phone: '13800000001', nickname: '示例农户', role: 'farmer', region: '河南周口' });
-    const teacher = await this.createUser({ phone: '13800000002', nickname: '王老师', role: 'teacher', region: '河南' });
-    const buyer = await this.createUser({ phone: '13800000003', nickname: '本地收购商', role: 'buyer', region: '河南' });
+    const admin = await this.createAuthUser({ phone: '13800000000', password: 'admin123456', nickname: '平台管理员', role: 'admin', region: '本地' }, this.hashPassword('admin123456'));
+    const farmer = await this.createAuthUser({ phone: '13800000001', password: 'farmer123456', nickname: '示例农户', role: 'farmer', region: '河南周口' }, this.hashPassword('farmer123456'));
+    const teacher = await this.createAuthUser({ phone: '13800000002', password: 'teacher123456', nickname: '王老师', role: 'teacher', region: '河南' }, this.hashPassword('teacher123456'));
+    const buyer = await this.createAuthUser({ phone: '13800000003', password: 'buyer123456', nickname: '本地收购商', role: 'buyer', region: '河南' }, this.hashPassword('buyer123456'));
     await this.createTutorial({ title: '番茄常见黄叶处理办法', category: '种植', cropOrBreed: '番茄', content: '先观察叶片位置，再排查缺肥、积水和病害。严重时建议请本地老师现场确认。', mediaUrl: '', authorId: teacher.id });
     await this.createSupply({ farmerId: farmer.id, productName: '散养土鸡', category: '养殖', quantity: 300, unit: '只', region: '河南周口', availableAt: '2026-07-01', description: '约3斤以上，可视频验货。', imageUrl: '', videoUrl: '', selfDeliveryPrice: 18, pickupPrice: 16, priceUnit: '元/斤', contactPhone: farmer.phone });
     await this.createPurchaseDemand({ buyerId: buyer.id, productName: '西瓜', category: '水果', quantity: 20000, unit: '斤', region: '周边50公里', purchaseAt: '2026-06-30', qualityRequirement: '8斤以上，成熟度好', selfDeliveryPrice: 1.2, pickupPrice: 1.0, priceUnit: '元/斤', contactPhone: buyer.phone });
@@ -110,10 +113,11 @@ export class StoreService implements OnModuleInit {
     return { id: Number(row.id), userId: Number(row.user_id), realName: row.real_name, expertise: row.expertise, region: row.region ?? undefined, credentialUrl: row.credential_url ?? undefined, intro: row.intro ?? undefined, status: row.status, rejectReason: row.reject_reason ?? undefined, createdAt: this.toIso(row.created_at) };
   }
 
-  private createUserMemory(input: Omit<User, 'id' | 'status' | 'createdAt'>): User {
+  private createUserMemory(input: Omit<User, 'id' | 'status' | 'createdAt'>, passwordHash?: string): User {
     if (this.users.some(u => u.phone === input.phone)) throw new BadRequestException('手机号已存在');
     const user: User = { id: this.id(), status: 'active', createdAt: this.now(), ...input };
     this.users.push(user);
+    if (passwordHash) this.memoryPasswordHashes.set(user.id, passwordHash);
     return user;
   }
 
@@ -123,6 +127,42 @@ export class StoreService implements OnModuleInit {
       return rows.map((row: RowDataPacket) => this.mapUser(row));
     }
     return this.users;
+  }
+
+
+  async findUserByPhone(phone: string): Promise<User | undefined> {
+    if (this.database.mode === 'mysql') {
+      const rows = await this.database.query<RowDataPacket[]>('SELECT * FROM users WHERE phone = ?', [phone]);
+      return rows[0] ? this.mapUser(rows[0]) : undefined;
+    }
+    return this.users.find(user => user.phone === phone);
+  }
+
+  async getPasswordHash(userId: number): Promise<string | undefined> {
+    if (this.database.mode === 'mysql') {
+      const rows = await this.database.query<RowDataPacket[]>('SELECT password_hash FROM users WHERE id = ?', [userId]);
+      return rows[0]?.password_hash ?? undefined;
+    }
+    return this.memoryPasswordHashes.get(userId);
+  }
+
+  async createAuthUser(input: Omit<User, 'id' | 'status' | 'createdAt'> & { password: string }, passwordHash: string): Promise<User> {
+    if (this.database.mode === 'memory') {
+      const { password: _password, ...userInput } = input;
+      void _password;
+      return this.createUserMemory(userInput, passwordHash);
+    }
+    try {
+      const result = await this.database.query<ResultSetHeader>(
+        'INSERT INTO users (phone, password_hash, nickname, role, region) VALUES (?, ?, ?, ?, ?)',
+        [input.phone, passwordHash, input.nickname, input.role, input.region ?? null],
+      );
+      const rows = await this.database.query<RowDataPacket[]>('SELECT * FROM users WHERE id = ?', [result.insertId]);
+      return this.mapUser(rows[0]);
+    } catch (error: any) {
+      if (error?.code === 'ER_DUP_ENTRY') throw new BadRequestException('手机号已存在');
+      throw error;
+    }
   }
 
   async listTutorials(status: ReviewStatus = 'approved') {

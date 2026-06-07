@@ -1,6 +1,7 @@
 CREATE TABLE IF NOT EXISTS users (
   id BIGINT PRIMARY KEY AUTO_INCREMENT,
   phone VARCHAR(32) NOT NULL UNIQUE,
+  password_hash VARCHAR(128),
   nickname VARCHAR(64) NOT NULL,
   role ENUM('farmer','teacher','buyer','admin') NOT NULL DEFAULT 'farmer',
   region VARCHAR(128),
