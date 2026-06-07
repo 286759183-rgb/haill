@@ -1,0 +1,22 @@
+{
+  "name": "haill-agri-platform",
+  "version": "0.1.0",
+  "private": true,
+  "description": "农业技术、问题求助、货源与收购撮合 MVP 平台",
+  "workspaces": [
+    "backend",
+    "web",
+    "admin"
+  ],
+  "scripts": {
+    "dev:backend": "npm --workspace backend run dev",
+    "dev:web": "npm --workspace web run dev",
+    "dev:admin": "npm --workspace admin run dev",
+    "build": "npm --workspaces run build",
+    "test": "npm --workspace backend test",
+    "lint": "npm --workspaces run lint --if-present"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
