@@ -7,10 +7,10 @@ export class SuppliesController {
   constructor(@Inject(StoreService) private readonly store: StoreService) {}
 
   @Get()
-  list() { return this.store.supplies.filter(item => item.status === 'approved'); }
+  list() { return this.store.listSupplies('approved'); }
 
   @Get('pending')
-  pending() { return this.store.supplies.filter(item => item.status === 'pending'); }
+  pending() { return this.store.listSupplies('pending'); }
 
   @Post()
   create(@Body() dto: CreateSupplyDto) { return this.store.createSupply(dto); }

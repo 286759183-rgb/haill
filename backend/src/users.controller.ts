@@ -7,7 +7,7 @@ export class UsersController {
   constructor(@Inject(StoreService) private readonly store: StoreService) {}
 
   @Get()
-  list() { return this.store.users; }
+  list() { return this.store.listUsers(); }
 
   @Post()
   create(@Body() dto: CreateUserDto) { return this.store.createUser(dto); }

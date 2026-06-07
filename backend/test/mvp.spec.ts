@@ -62,4 +62,9 @@ describe('haill MVP API', () => {
 
     expect(reviewed.body.status).toBe('approved');
   });
+
+  it('returns database mode so deployment can verify MySQL readiness', async () => {
+    const res = await request(app.getHttpServer()).get('/api/health').expect(200);
+    expect(res.body.database.mode).toBe('memory');
+  });
 });

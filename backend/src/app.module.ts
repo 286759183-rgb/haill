@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { HealthController } from './health.controller';
 import { StoreService } from './store.service';
+import { DatabaseService } from './database.service';
 import { UsersController } from './users.controller';
 import { TutorialsController } from './tutorials.controller';
 import { QuestionsController } from './questions.controller';
@@ -21,6 +22,6 @@ import { AdminController } from './admin.controller';
     PurchaseDemandsController,
     AdminController,
   ],
-  providers: [StoreService],
+  providers: [DatabaseService, StoreService],
 })
 export class AppModule {}

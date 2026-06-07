@@ -7,7 +7,7 @@ export class QuestionsController {
   constructor(@Inject(StoreService) private readonly store: StoreService) {}
 
   @Get()
-  list() { return this.store.questions.filter(item => item.status !== 'offline'); }
+  list() { return this.store.listQuestions(); }
 
   @Post()
   create(@Body() dto: CreateQuestionDto) { return this.store.createQuestion(dto); }

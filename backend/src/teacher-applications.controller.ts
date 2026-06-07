@@ -7,7 +7,7 @@ export class TeacherApplicationsController {
   constructor(@Inject(StoreService) private readonly store: StoreService) {}
 
   @Get()
-  list() { return this.store.teacherApplications; }
+  list() { return this.store.listTeacherApplications(); }
 
   @Post()
   create(@Body() dto: CreateTeacherApplicationDto) { return this.store.createTeacherApplication(dto); }
