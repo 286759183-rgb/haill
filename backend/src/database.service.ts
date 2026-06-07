@@ -1,7 +1,7 @@
 import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { readFileSync, existsSync } from 'node:fs';
 import { resolve } from 'node:path';
-import mysql, { Pool, PoolOptions, RowDataPacket, ResultSetHeader } from 'mysql2/promise';
+import { createPool, Pool, PoolOptions, RowDataPacket, ResultSetHeader } from 'mysql2/promise';
 
 export type DatabaseMode = 'memory' | 'mysql';
 
@@ -23,7 +23,7 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
     if (this.mode !== 'mysql') return;
 
     if (process.env.DATABASE_URL) {
-      this.pool = mysql.createPool(process.env.DATABASE_URL);
+      this.pool = createPool(process.env.DATABASE_URL);
     } else {
       const options: PoolOptions = {
         host: process.env.MYSQL_HOST || process.env.DB_HOST || '127.0.0.1',
@@ -34,7 +34,7 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
         waitForConnections: true,
         connectionLimit: 10,
       };
-      this.pool = mysql.createPool(options);
+      this.pool = createPool(options);
     }
 
     await this.pool.query('SELECT 1');
